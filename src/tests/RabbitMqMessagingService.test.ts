@@ -2,7 +2,6 @@ import 'reflect-metadata';
 import { RabbitMqMessagingService } from '../RabbitMqMessagingService';
 import { MockMonitoringService } from './MockMonitoringService';
 import { Channel, Connection, connect } from 'amqplib';
-import { Message } from '../types/message.types';
 
 jest.mock('amqplib');
 

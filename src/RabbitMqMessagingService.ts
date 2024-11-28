@@ -4,6 +4,7 @@ import { MessagingService } from './MessagingService';
 import { Message } from './types/message.types';
 import { IMonitoringService } from './interfaces/monitoring.interface';
 import { TYPES } from './constants';
+import { QUEUE_OPTIONS } from './config/queue.config';
 
 @injectable()
 export class RabbitMqMessagingService extends MessagingService {
@@ -48,7 +49,7 @@ export class RabbitMqMessagingService extends MessagingService {
       if (!this.channel) {
         throw new Error('Channel not available');
       }
-      await this.channel.assertQueue(queue, { durable: true });
+      await this.channel.assertQueue(queue, QUEUE_OPTIONS);
       const sent = this.channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)));
       if (!sent) {
         this.monitoring.increment('messages_failed', { destination: queue });
@@ -66,7 +67,7 @@ export class RabbitMqMessagingService extends MessagingService {
       if (!this.channel) {
         throw new Error('Channel not available');
       }
-      await this.channel.assertQueue(queue, { durable: true });
+      await this.channel.assertQueue(queue, QUEUE_OPTIONS);
       for (const message of messages) {
         const sent = this.channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)));
         if (!sent) {
@@ -78,7 +79,7 @@ export class RabbitMqMessagingService extends MessagingService {
     });
   }
 
-  async attemptOperation(operation: () => Promise<void>, retries = 3): Promise<void> {
+  private async attemptOperation(operation: () => Promise<void>, retries = 3): Promise<void> {
     for (let attempt = 0; attempt < retries; attempt++) {
       try {
         await operation();
