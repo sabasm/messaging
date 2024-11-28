@@ -3,7 +3,7 @@ export const TYPES = {
   FallbackMessagingService: Symbol.for('FallbackMessagingService'),
   MonitoringService: Symbol.for('MonitoringService'),
   MessagingContext: Symbol.for('MessagingContext'),
-  ConfigService: Symbol.for('ConfigService'),
+  ConnectionManager: Symbol.for('ConnectionManager')
 };
 
 
