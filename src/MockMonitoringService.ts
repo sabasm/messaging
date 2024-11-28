@@ -39,3 +39,5 @@ export class MockMonitoringService implements IMonitoringService {
     return labels ? JSON.stringify(labels) : 'default';
   }
 }
+
+

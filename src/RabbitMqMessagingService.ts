@@ -5,44 +5,53 @@ import { IMonitoringService } from './interfaces';
 import { TYPES } from './constants';
 import { IConnectionManager } from './infrastructure/amqp/IConnectionManager';
 import { QUEUE_OPTIONS } from './config/queue.config';
+import { Channel, Connection } from 'amqplib';
 
 @injectable()
 export class RabbitMqMessagingService extends MessagingService {
-  private connectionManager: IConnectionManager;
-
   constructor(
     @inject(TYPES.MonitoringService) private monitoring: IMonitoringService,
-    @inject(TYPES.ConnectionManager) connectionManager: IConnectionManager
+    @inject(TYPES.ConnectionManager) private connectionManager: IConnectionManager
   ) {
     super();
-    this.connectionManager = connectionManager;
   }
 
   async sendMessage(queue: string, message: Message): Promise<void> {
-    const connection = await this.connectionManager.connect();
-    const channel = await this.connectionManager.createChannel(connection);
-    try {
-      await channel.assertQueue(queue, QUEUE_OPTIONS);
-      channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)));
-      this.monitoring.increment('messages_sent', { destination: queue });
-    } finally {
-      await channel.close();
-      await connection.close();
-    }
+    await this.processMessage(queue, [message], false);
   }
 
   async sendBatch(queue: string, messages: Message[]): Promise<void> {
-    const connection = await this.connectionManager.connect();
-    const channel = await this.connectionManager.createChannel(connection);
+    await this.processMessage(queue, messages, true);
+  }
+
+  private async processMessage(queue: string, messages: Message[], isBatch: boolean): Promise<void> {
+    let connection: Connection | null = null;
+    let channel: Channel | null = null;
+
     try {
+      connection = await this.connectionManager.connect();
+      channel = await this.connectionManager.createChannel(connection);
       await channel.assertQueue(queue, QUEUE_OPTIONS);
+
       for (const message of messages) {
         channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)));
+        this.monitoring.increment('messages_sent', { destination: queue });
       }
-      this.monitoring.increment('messages_sent', { destination: queue, batch: 'true' });
+
+      if (isBatch) {
+        this.monitoring.increment('batches_sent', { destination: queue, count: `${messages.length}` });
+      }
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Unknown Error';
+      this.monitoring.increment('connection_errors', {
+        error: errorMessage,
+        batch: isBatch ? 'true' : 'false',
+        destination: queue,
+      });
+      throw new Error(`Failed to process messages in queue "${queue}": ${errorMessage}`);
     } finally {
-      await channel.close();
-      await connection.close();
+      if (channel) await channel.close();
+      if (connection) await connection.close();
     }
   }
 }
