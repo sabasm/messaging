@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { IMonitoringService, MetricLabels } from '../interfaces/monitoring.interface';
+import { IMonitoringService, MetricLabels } from './interfaces/monitoring.interface';
 
 @injectable()
 export class MockMonitoringService implements IMonitoringService {
