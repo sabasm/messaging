@@ -1,5 +1,4 @@
 import { MonitoringService } from '../MonitoringService';
-import { IMonitoringService, MetricLabels } from '../interfaces/monitoring.interface';
 
 describe('MonitoringService', () => {
   let service: MonitoringService;

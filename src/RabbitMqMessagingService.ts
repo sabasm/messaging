@@ -41,8 +41,11 @@ export class RabbitMqMessagingService extends MessagingService {
       if (isBatch) {
         this.monitoring.increment('batches_sent', { destination: queue, count: `${messages.length}` });
       }
-    } catch (error: any) {
-      const errorMessage = error?.message || 'Unknown Error';
+    } catch (error: unknown) {
+      let errorMessage = 'Unknown Error';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
       this.monitoring.increment('connection_errors', {
         error: errorMessage,
         batch: isBatch ? 'true' : 'false',
