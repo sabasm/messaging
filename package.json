@@ -4,11 +4,11 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "test": "jest --coverage",
-    "lint": "eslint . --ext .ts",
     "clean": "rm -rf dist",
-    "prebuild": "npm run clean"
+    "prebuild": "npm run clean",
+    "build": "tsc",
+    "lint": "eslint . --ext .ts",
+    "test": "jest --coverage --detectOpenHandles"
   },
   "keywords": [],
   "author": "",
@@ -30,6 +30,8 @@
     "jest": "^29.7.0",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.3.2"
   }
 }
+
+

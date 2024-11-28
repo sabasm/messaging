@@ -92,6 +92,17 @@ export class RabbitMqMessagingService extends MessagingService {
       }
     }
   }
+
+  public async closeConnection(): Promise<void> {
+    if (this.channel) {
+      await this.channel.close();
+      this.channel = null;
+    }
+    if (this.connection) {
+      await this.connection.close();
+      this.connection = null;
+    }
+  }
 }
 
 
