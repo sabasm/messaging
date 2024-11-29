@@ -1,15 +1,11 @@
-export interface MetricLabels {
-  destination: string;
-  batch?: 'true' | 'false';
-  messageId?: string;
-  correlationId?: string;
-  [key: string]: string | undefined;
-}
+import { MetricLabels } from '../core/types/metrics';
+
+export { MetricLabels };
 
 export interface IMonitoringService {
-  increment(metric: string, labels?: Partial<MetricLabels>): void;
-  gauge(metric: string, value: number, labels?: Partial<MetricLabels>): void;
-  histogram(metric: string, value: number, labels?: Partial<MetricLabels>): void;
+ increment(metric: string, labels?: MetricLabels): void;
+ gauge(metric: string, value: number, labels?: MetricLabels): void;
+ histogram(metric: string, value: number, labels?: MetricLabels): void;
 }
 
 

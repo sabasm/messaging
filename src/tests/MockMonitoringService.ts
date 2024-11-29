@@ -3,39 +3,40 @@ import { IMonitoringService, MetricLabels } from '../interfaces/monitoring.inter
 
 @injectable()
 export class MockMonitoringService implements IMonitoringService {
-  private metrics: Record<string, number> = {};
-  private labels: Record<string, Record<string, string>> = {};
+ private metrics: Record<string, number> = {};
+ private labels: Record<string, Record<string, string>> = {};
 
-  increment(metric: string, labels?: Partial<MetricLabels>): void {
-    const labelKey = this.getLabelKey(labels);
-    const key = `${metric}:${labelKey}`;
-    this.metrics[key] = (this.metrics[key] || 0) + 1;
-  }
+ increment(metric: string, labels?: MetricLabels): void {
+   const labelKey = this.getLabelKey(labels);
+   const key = `${metric}:${labelKey}`;
+   this.metrics[key] = (this.metrics[key] || 0) + 1;
+ }
 
-  gauge(metric: string, value: number, labels?: Partial<MetricLabels>): void {
-    const labelKey = this.getLabelKey(labels);
-    const key = `${metric}:${labelKey}`;
-    this.metrics[key] = value;
-  }
+ gauge(metric: string, value: number, labels?: MetricLabels): void {
+   const labelKey = this.getLabelKey(labels);
+   const key = `${metric}:${labelKey}`;
+   this.metrics[key] = value;
+ }
 
-  histogram(metric: string, value: number, labels?: Partial<MetricLabels>): void {
-    const labelKey = this.getLabelKey(labels);
-    const key = `${metric}:${labelKey}`;
-    this.metrics[key] = value;
-  }
+ histogram(metric: string, value: number, labels?: MetricLabels): void {
+   const labelKey = this.getLabelKey(labels);
+   const key = `${metric}:${labelKey}`;
+   this.metrics[key] = value;
+ }
 
-  getMetricCount(metric: string, labels?: Partial<MetricLabels>): number {
-    const labelKey = this.getLabelKey(labels);
-    const key = `${metric}:${labelKey}`;
-    return this.metrics[key] || 0;
-  }
+ getMetricCount(metric: string, labels?: MetricLabels): number {
+   const labelKey = this.getLabelKey(labels);
+   const key = `${metric}:${labelKey}`;
+   return this.metrics[key] || 0;
+ }
 
-  reset(): void {
-    this.metrics = {};
-    this.labels = {};
-  }
+ reset(): void {
+   this.metrics = {};
+   this.labels = {};
+ }
 
-  private getLabelKey(labels?: Partial<MetricLabels>): string {
-    return labels ? JSON.stringify(labels) : 'default';
-  }
+ private getLabelKey(labels?: MetricLabels): string {
+   return labels ? JSON.stringify(labels) : 'default';
+ }
 }
+

@@ -7,53 +7,70 @@ import { TYPES } from './constants';
 
 @injectable()
 export class ApiMessagingService extends MessagingService {
-  private retryCount = 3;
+ private retryCount = 3;
+ private isInitialized = false;
 
-  constructor(
-    @inject(TYPES.MonitoringService) private monitoring: IMonitoringService
-  ) {
-    super();
-  }
+ constructor(
+   @inject(TYPES.MonitoringService) private monitoring: IMonitoringService
+ ) {
+   super();
+ }
 
-  async sendMessage(endpoint: string, message: Message): Promise<void> {
-    const processedMessage = this.preprocessMessage(message);
+ async init(): Promise<void> {
+   if (this.isInitialized) return;
+   this.isInitialized = true;
+ }
 
-    for (let attempt = 1; attempt <= this.retryCount; attempt++) {
-      try {
-        await axios.post(endpoint, processedMessage, {
-          headers: { 'Content-Type': 'application/json' }
-        });
-        this.monitoring.increment('messages_sent', { destination: endpoint });
-        return;
-      } catch (error) {
-        this.monitoring.increment('messages_failed', { destination: endpoint });
-        if (attempt === this.retryCount) {
-          throw error;
-        }
-        await new Promise(resolve => setTimeout(resolve, attempt * 1000));
-      }
-    }
-  }
+ async dispose(): Promise<void> {
+   if (!this.isInitialized) return;
+   this.isInitialized = false;
+ }
 
-  async sendBatch(endpoint: string, messages: Message[]): Promise<void> {
-    const processedMessages = messages.map(msg => this.preprocessMessage(msg));
+ async sendMessage(endpoint: string, message: Message): Promise<void> {
+   if (!this.isInitialized) {
+     await this.init();
+   }
+   const processedMessage = this.preprocessMessage(message);
 
-    for (let attempt = 1; attempt <= this.retryCount; attempt++) {
-      try {
-        await axios.post(endpoint, processedMessages, {
-          headers: { 'Content-Type': 'application/json' }
-        });
-        this.monitoring.increment('messages_sent', { destination: endpoint, batch: 'true' });
-        return;
-      } catch (error) {
-        this.monitoring.increment('messages_failed', { destination: endpoint, batch: 'true' });
-        if (attempt === this.retryCount) {
-          throw error;
-        }
-        await new Promise(resolve => setTimeout(resolve, attempt * 1000));
-      }
-    }
-  }
+   for (let attempt = 1; attempt <= this.retryCount; attempt++) {
+     try {
+       await axios.post(endpoint, processedMessage, {
+         headers: { 'Content-Type': 'application/json' }
+       });
+       this.monitoring.increment('messages_sent', { destination: endpoint });
+       return;
+     } catch (error) {
+       this.monitoring.increment('messages_failed', { destination: endpoint });
+       if (attempt === this.retryCount) {
+         throw error;
+       }
+       await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+     }
+   }
+ }
+
+ async sendBatch(endpoint: string, messages: Message[]): Promise<void> {
+   if (!this.isInitialized) {
+     await this.init();
+   }
+   const processedMessages = messages.map(msg => this.preprocessMessage(msg));
+
+   for (let attempt = 1; attempt <= this.retryCount; attempt++) {
+     try {
+       await axios.post(endpoint, processedMessages, {
+         headers: { 'Content-Type': 'application/json' }
+       });
+       this.monitoring.increment('messages_sent', { destination: endpoint, batch: 'true' });
+       return;
+     } catch (error) {
+       this.monitoring.increment('messages_failed', { destination: endpoint, batch: 'true' });
+       if (attempt === this.retryCount) {
+         throw error;
+       }
+       await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+     }
+   }
+ }
 }
 
 
