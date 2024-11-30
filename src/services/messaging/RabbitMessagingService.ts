@@ -1,46 +1,32 @@
 import { injectable, inject } from 'inversify';
-import { MessagingService } from './MessagingService';
-import { Message } from './types/message.types';
-import { IMonitoringService } from './interfaces';
-import { TYPES } from './constants';
-import { IConnectionManager } from './infrastructure/amqp/IConnectionManager';
-import { QUEUE_OPTIONS } from './config/queue.config';
+import { BaseMessagingService } from '../base/BaseMessagingService';
+import { Message } from '../../types';
+import { IMonitoringService } from '../../interfaces';
+import { TYPES } from '../../constants';
+import { IConnectionManager } from '../../infrastructure/amqp/IConnectionManager';
+import { QUEUE_OPTIONS } from '../../config/queue.config';
 import { Channel, Connection } from 'amqplib';
 
 @injectable()
-export class RabbitMqMessagingService extends MessagingService {
-  private isInitialized = false;
-
+export class RabbitMessagingService extends BaseMessagingService {
   constructor(
-    @inject(TYPES.MonitoringService) private monitoring: IMonitoringService,
+    @inject(TYPES.MonitoringService) monitoring: IMonitoringService,
     @inject(TYPES.ConnectionManager) private connectionManager: IConnectionManager
   ) {
-    super();
+    super(monitoring);
   }
 
-  async init(): Promise<void> {
-    if (this.isInitialized) return;
-    this.monitoring.increment('rabbitmq_initialized', { state: 'init' });
-    this.isInitialized = true;
-  }
-
-  async dispose(): Promise<void> {
-    if (!this.isInitialized) return;
-    this.monitoring.increment('rabbitmq_disposed', { state: 'disposed' });
-    this.isInitialized = false;
+  protected getServiceName(): string {
+    return 'rabbitmq';
   }
 
   async sendMessage(queue: string, message: Message): Promise<void> {
-    if (!this.isInitialized) {
-      await this.init();
-    }
+    await this.initialize();
     await this.processMessages(queue, [message], false);
   }
 
   async sendBatch(queue: string, messages: Message[]): Promise<void> {
-    if (!this.isInitialized) {
-      await this.init();
-    }
+    await this.initialize();
     await this.processMessages(queue, messages, true);
   }
 
@@ -52,21 +38,12 @@ export class RabbitMqMessagingService extends MessagingService {
     try {
       connection = await this.connectionManager.connect();
       channel = await this.connectionManager.createChannel(connection);
-      
       await channel.assertQueue(queue, QUEUE_OPTIONS);
-      this.monitoring.increment('connection_success', labels);
 
       for (const message of messages) {
-        try {
-          const messageBuffer = Buffer.from(JSON.stringify(message));
-          const sent = channel.sendToQueue(queue, messageBuffer);
-          if (sent) {
-            this.monitoring.increment('messages_sent', labels);
-          }
-        } catch (error) {
-          this.monitoring.increment('message_processing_errors', labels);
-          throw error;
-        }
+        const messageBuffer = Buffer.from(JSON.stringify(message));
+        channel.sendToQueue(queue, messageBuffer);
+        this.monitoring.increment('messages_sent', labels);
       }
 
       if (isBatch) {

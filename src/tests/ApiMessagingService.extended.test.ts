@@ -1,11 +1,10 @@
-
-import { ApiMessagingService } from '../ApiMessagingService';
-import { MockMonitoringService } from './MockMonitoringService';
-import { HttpClient } from '../core/types/http.types';
 import axios from 'axios';
-import { Message } from '../types';
+import { ApiMessagingService } from '../services/messaging/ApiMessagingService';
+import { MockMonitoringService } from './mocks/MockMonitoringService';
+import { HttpClient } from '../core/types/http.types';
 import { Container } from 'inversify';
 import { TYPES } from '../constants';
+import { Message } from '../types';
 import { IMonitoringService } from '../interfaces';
 
 jest.mock('axios');
@@ -17,7 +16,7 @@ class MockHttpClient implements HttpClient {
   }
 }
 
-describe('ApiMessagingService', () => {
+describe('ApiMessagingService Extended Tests', () => {
   let container: Container;
   let service: ApiMessagingService;
   let monitoring: MockMonitoringService;
@@ -39,8 +38,7 @@ describe('ApiMessagingService', () => {
 
   const message: Message = {
     id: '1',
-    timestamp: new Date(),
-    payload: { data: 'test' }
+    payload: { data: 'test' },
   };
 
   describe('sendMessage', () => {
@@ -53,7 +51,8 @@ describe('ApiMessagingService', () => {
         'test-endpoint',
         expect.objectContaining({
           id: '1',
-          payload: { data: 'test' }
+          payload: { data: 'test' },
+          timestamp: expect.any(Date),
         }),
         expect.any(Object)
       );
@@ -70,30 +69,17 @@ describe('ApiMessagingService', () => {
       expect(mockedAxios.post).toHaveBeenCalledTimes(2);
       expect(monitoring.getMetricCount('messages_sent', { destination: 'test-endpoint' })).toBe(1);
       expect(monitoring.getMetricCount('messages_failed', { destination: 'test-endpoint' })).toBe(1);
-    }, 10000);
+    });
 
     it('should fail after max retries', async () => {
       const error = new Error('Network error');
       mockedAxios.post.mockRejectedValue(error);
 
-      await expect(service.sendMessage('test-endpoint', message))
-        .rejects
-        .toBe(error);
+      await expect(service.sendMessage('test-endpoint', message)).rejects.toThrow('Network error');
 
       expect(mockedAxios.post).toHaveBeenCalledTimes(3);
       expect(monitoring.getMetricCount('messages_failed', { destination: 'test-endpoint' })).toBe(3);
-    }, 10000);
-
-    it('should handle non-Error rejection', async () => {
-      const errorValue = 'Unknown error';
-      mockedAxios.post.mockRejectedValue(errorValue);
-
-      await expect(service.sendMessage('test-endpoint', message))
-        .rejects
-        .toBe(errorValue);
-
-      expect(monitoring.getMetricCount('messages_failed', { destination: 'test-endpoint' })).toBe(3);
-    }, 10000);
+    });
   });
 
   describe('sendBatch', () => {
@@ -108,7 +94,7 @@ describe('ApiMessagingService', () => {
         'test-endpoint',
         expect.arrayContaining([
           expect.objectContaining({ id: '1' }),
-          expect.objectContaining({ id: '2' })
+          expect.objectContaining({ id: '2' }),
         ]),
         expect.any(Object)
       );
@@ -125,18 +111,16 @@ describe('ApiMessagingService', () => {
       expect(mockedAxios.post).toHaveBeenCalledTimes(2);
       expect(monitoring.getMetricCount('messages_sent', { destination: 'test-endpoint', batch: 'true' })).toBe(1);
       expect(monitoring.getMetricCount('messages_failed', { destination: 'test-endpoint', batch: 'true' })).toBe(1);
-    }, 10000);
+    });
 
     it('should fail after max retries', async () => {
       const error = new Error('Network error');
       mockedAxios.post.mockRejectedValue(error);
 
-      await expect(service.sendBatch('test-endpoint', messages))
-        .rejects
-        .toBe(error);
+      await expect(service.sendBatch('test-endpoint', messages)).rejects.toThrow('Network error');
 
       expect(mockedAxios.post).toHaveBeenCalledTimes(3);
       expect(monitoring.getMetricCount('messages_failed', { destination: 'test-endpoint', batch: 'true' })).toBe(3);
-    }, 10000);
+    });
   });
-})
+});

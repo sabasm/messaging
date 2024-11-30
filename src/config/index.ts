@@ -1,6 +1,4 @@
 export * from './base.config';
-export * from './environment';
+export { getEnvironmentState } from './environment';
 export * from './validation';
-export * from './types';
-
-
+export { Environment } from './types';

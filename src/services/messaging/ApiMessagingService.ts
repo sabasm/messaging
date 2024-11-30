@@ -1,48 +1,33 @@
-
 import { injectable, inject } from 'inversify';
-import { MessagingService } from './MessagingService';
-import { Message } from './types';
-import { IMonitoringService } from './interfaces';
-import { TYPES } from './constants';
-import { HttpClient } from './core/types/http.types';
+import { BaseMessagingService } from '../base/BaseMessagingService';
+import { Message } from '../../types';
+import { IMonitoringService } from '../../interfaces';
+import { TYPES } from '../../constants';
+import { HttpClient } from '../../core/types/http.types';
 
 @injectable()
-export class ApiMessagingService extends MessagingService {
+export class ApiMessagingService extends BaseMessagingService {
   private isInitialized = false;
   private retryCount = 3;
 
   constructor(
-    @inject(TYPES.MonitoringService) private monitoring: IMonitoringService,
+    @inject(TYPES.MonitoringService) monitoring: IMonitoringService,
     @inject(TYPES.HttpClient) private httpClient: HttpClient
   ) {
-    super();
+    super(monitoring);
   }
 
-  async init(): Promise<void> {
-    if (!this.isInitialized) {
-      this.monitoring.increment('api_provider_initialized', { state: 'init' });
-      this.isInitialized = true;
-    }
-  }
-
-  async dispose(): Promise<void> {
-    if (this.isInitialized) {
-      this.monitoring.increment('api_provider_disposed', { state: 'disposed' });
-      this.isInitialized = false;
-    }
+  protected getServiceName(): string {
+    return 'api';
   }
 
   async sendMessage(endpoint: string, message: Message): Promise<void> {
-    if (!this.isInitialized) {
-      await this.init();
-    }
+    await this.initialize();
     await this.sendWithRetry(endpoint, message, false);
   }
 
   async sendBatch(endpoint: string, messages: Message[]): Promise<void> {
-    if (!this.isInitialized) {
-      await this.init();
-    }
+    await this.initialize();
     if (messages.length > 0) {
       await this.sendWithRetry(endpoint, messages, true);
     }
@@ -67,3 +52,5 @@ export class ApiMessagingService extends MessagingService {
     }
   }
 }
+
+

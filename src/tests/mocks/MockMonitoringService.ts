@@ -1,6 +1,5 @@
-import { MetricLabels } from "../core/types/messaging.types";
-import { IMonitoringService } from "../interfaces";
-
+import { IMonitoringService } from '../../interfaces/monitoring.interface';
+import { MetricLabels } from '../../core/types/metrics';
 
 export class MockMonitoringService implements IMonitoringService {
   private metrics = new Map<string, number>();
@@ -30,17 +29,13 @@ export class MockMonitoringService implements IMonitoringService {
   }
 
   private buildMetricKey(metric: string, labels?: MetricLabels): string {
-    if (!labels) {
-      return metric;
-    }
-
+    if (!labels) return metric;
     const sortedLabels = Object.entries(labels)
       .filter(([, value]) => value !== undefined)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([key, value]) => `${key}=${value}`)
       .join(',');
-
-    return sortedLabels ? `${metric}{${sortedLabels}}` : metric;
+    return `${metric}{${sortedLabels}}`;
   }
 }
 
