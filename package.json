@@ -12,7 +12,7 @@
     "test": "jest --coverage --detectOpenHandles"
   },
   "keywords": [],
-  "author": "",
+  "author": "Sabás Mendívil",
   "license": "ISC",
   "dependencies": {
     "amqplib": "^0.10.5",
