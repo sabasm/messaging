@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
+    "postpublish": "git push && git push --tags",
     "clean": "rm -rf dist",
     "prebuild": "npm run clean",
     "build": "tsc",
@@ -12,8 +13,8 @@
     "test": "jest --coverage --detectOpenHandles",
     "test:integration": "jest --testPathPattern=integration --runInBand",
     "prepare": "npm run build",
-    "prepublishOnly": "npm run lint && npm test",
-    "version": "git add -A src",
+    "prepublishOnly": "npm run clean && npm run build && npm run lint && npm test",
+    "version": "git add -A",
     "postversion": "git push && git push --tags",
     "release": "npm version"
   },
