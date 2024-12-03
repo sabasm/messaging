@@ -1,12 +1,8 @@
 export interface MessageMetadata {
   priority?: number;
   delay?: number;
-  contentType?: string;
-  correlationId?: string;
-  timestamp?: Date;
   headers?: Record<string, unknown>;
-  retryCount?: number;
-  deadLetterQueue?: string;
+  test?: boolean;
 }
 
 export interface Message {

@@ -5,7 +5,8 @@ export const TYPES = {
   MessagingContext: Symbol.for('MessagingContext'),
   ConnectionManager: Symbol.for('ConnectionManager'),
   HttpClient: Symbol.for('HttpClient'),
-  Config: Symbol.for('Config')
+  Config: Symbol.for('Config'),
+  MiddlewareChain: Symbol.for('MiddlewareChain')
 };
 
 

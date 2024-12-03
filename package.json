@@ -1,6 +1,6 @@
 {
   "name": "@smendivil/little_bunny",
-  "version": "1.0.1",
+  "version": "1.2.0",
   "description": "Resilient messaging framework with fallback strategies",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,16 +9,40 @@
     "prebuild": "npm run clean",
     "build": "tsc",
     "lint": "eslint . --ext .ts",
-    "test": "jest --coverage --detectOpenHandles"
+    "test": "jest --coverage --detectOpenHandles",
+    "test:integration": "jest --testPathPattern=integration --runInBand",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run lint && npm test",
+    "version": "git add -A src",
+    "postversion": "git push && git push --tags",
+    "release": "npm version"
   },
-  "keywords": [],
+  "keywords": [
+    "messaging",
+    "rabbitmq",
+    "api",
+    "typescript",
+    "resilient",
+    "fallback"
+  ],
   "author": "Sabás Mendívil",
   "license": "ISC",
+  "files": [
+    "dist/**/*"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smendivil/little-bunny.git"
+  },
+  "bugs": {
+    "url": "https://github.com/smendivil/little-bunny/issues"
+  },
+  "homepage": "https://github.com/smendivil/little-bunny#readme",
   "dependencies": {
     "amqplib": "^0.10.5",
     "axios": "^1.7.8",
     "dotenv": "^16.4.5",
-    "inversify": "^6.1.4",
+    "inversify": "^6.1.5",
     "ioredis": "^5.4.1",
     "reflect-metadata": "^0.2.2",
     "winston": "^3.17.0",

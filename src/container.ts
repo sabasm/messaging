@@ -8,6 +8,7 @@ import { MessagingContext } from './MessagingContext';
 import { ConnectionManager } from './infrastructure/amqp/ConnectionManager';
 import { IConnectionManager } from './infrastructure/amqp/IConnectionManager';
 import { BaseConfig } from './config/base.config';
+import { MiddlewareChain } from './middleware/implementation/middleware-chain';
 
 const container = new Container({ defaultScope: 'Singleton' });
 
@@ -16,11 +17,8 @@ container.bind<IMessagingService>(TYPES.MessagingService).to(ApiMessagingService
 container.bind<IMessagingService>(TYPES.FallbackMessagingService).to(RabbitMqMessagingService).inSingletonScope();
 container.bind<IConnectionManager>(TYPES.ConnectionManager).to(ConnectionManager).inSingletonScope();
 container.bind(TYPES.Config).toConstantValue(BaseConfig.getInstance());
-container.bind<MessagingContext>(TYPES.MessagingContext).toDynamicValue((context) => {
-  const primary = context.container.get<IMessagingService>(TYPES.MessagingService);
-  const fallback = context.container.get<IMessagingService>(TYPES.FallbackMessagingService);
-  return new MessagingContext(primary, fallback);
-}).inSingletonScope();
+container.bind<MiddlewareChain>(TYPES.MiddlewareChain).to(MiddlewareChain).inSingletonScope();
+container.bind<MessagingContext>(TYPES.MessagingContext).to(MessagingContext).inSingletonScope();
 
 export { container };
 
