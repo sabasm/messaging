@@ -1,3 +1,4 @@
+// src/MessagingContext.ts
 import { injectable, inject } from 'inversify';
 import { IMessagingService } from './interfaces';
 import { TYPES } from './constants';
@@ -22,6 +23,20 @@ export class MessagingContext {
 
   setFallbackStrategy(fallback: IMessagingService): void {
     this.fallbackStrategy = fallback;
+  }
+
+  async init(): Promise<void> {
+    await this.strategy.init();
+    if (this.fallbackStrategy) {
+      await this.fallbackStrategy.init();
+    }
+  }
+
+  async dispose(): Promise<void> {
+    await this.strategy.dispose();
+    if (this.fallbackStrategy) {
+      await this.fallbackStrategy.dispose();
+    }
   }
 
   async sendMessage(destination: string, message: Message): Promise<void> {
@@ -56,5 +71,3 @@ export class MessagingContext {
     }
   }
 }
-
-
