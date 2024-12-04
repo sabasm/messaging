@@ -1,24 +1,50 @@
-// src/infrastructure/amqp/connection.ts
 import { Connection, connect, Channel } from 'amqplib';
+import { injectable } from 'inversify';
 import { RetryableError } from '../../core/types/retry';
+import { IConnectionManager } from './interfaces';
 
 export interface RabbitConnection {
   connection: Connection;
   channel: Channel;
 }
 
-export class RabbitConnectionManager {
+@injectable()
+export class RabbitConnectionManager implements IConnectionManager {
   private connection: RabbitConnection | null = null;
   private connecting = false;
   private connectionPromise: Promise<RabbitConnection> | null = null;
 
   constructor(
-    private readonly url: string,
-    private readonly options: {
-      heartbeat?: number;
-      prefetchCount?: number;
-    } = {}
+    private readonly url: string = 'amqp://localhost',
+    private readonly options: { heartbeat?: number; prefetchCount?: number; } = {}
   ) { }
+
+  async connect(): Promise<Connection> {
+    try {
+      const conn = await this.getConnection();
+      return conn.connection;
+    } catch (error) {
+      if (error instanceof RetryableError) {
+        throw error;
+      }
+      throw new RetryableError('Connection failed', error instanceof Error ? error : undefined);
+    }
+  }
+
+  async createChannel(connection: Connection): Promise<Channel> {
+    try {
+      const channel = await connection.createChannel();
+      if (this.options.prefetchCount) {
+        await channel.prefetch(this.options.prefetchCount);
+      }
+      return channel;
+    } catch (error) {
+      throw new RetryableError(
+        'Failed to create channel',
+        error instanceof Error ? error : undefined
+      );
+    }
+  }
 
   async getConnection(): Promise<RabbitConnection> {
     if (this.connection && this.validateConnection(this.connection)) {
@@ -30,7 +56,7 @@ export class RabbitConnectionManager {
     }
 
     this.connecting = true;
-    this.connectionPromise = this.connect()
+    this.connectionPromise = this.initConnection()
       .then(conn => {
         this.connection = conn;
         this.connecting = false;
@@ -45,7 +71,7 @@ export class RabbitConnectionManager {
     return this.connectionPromise;
   }
 
-  private async connect(): Promise<RabbitConnection> {
+  private async initConnection(): Promise<RabbitConnection> {
     try {
       const connection = await connect(this.url, {
         heartbeat: this.options.heartbeat
@@ -57,10 +83,7 @@ export class RabbitConnectionManager {
         await channel.prefetch(this.options.prefetchCount);
       }
 
-      connection.on('error', this.handleDisconnect.bind(this));
-      connection.on('close', this.handleDisconnect.bind(this));
-      channel.on('error', this.handleDisconnect.bind(this));
-      channel.on('close', this.handleDisconnect.bind(this));
+      this.setupEventHandlers(connection, channel);
 
       return { connection, channel };
     } catch (error) {
@@ -71,9 +94,18 @@ export class RabbitConnectionManager {
     }
   }
 
+  private setupEventHandlers(connection: Connection, channel: Channel): void {
+    connection.on('error', this.handleDisconnect.bind(this));
+    connection.on('close', this.handleDisconnect.bind(this));
+    channel.on('error', this.handleDisconnect.bind(this));
+    channel.on('close', this.handleDisconnect.bind(this));
+  }
+
   private validateConnection(conn: RabbitConnection): boolean {
     try {
-      return conn.connection !== null && typeof conn.connection.close === 'function';
+      return conn.connection !== null &&
+        typeof conn.connection.close === 'function' &&
+        conn.channel !== null;
     } catch {
       return false;
     }
@@ -81,6 +113,9 @@ export class RabbitConnectionManager {
 
   private handleDisconnect(): void {
     this.connection = null;
-    this.getConnection().catch(() => { });
+    this.connecting = false;
+    this.connectionPromise = null;
   }
 }
+
+
