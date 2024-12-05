@@ -11,3 +11,9 @@ export interface Message {
   payload: Record<string, unknown>;
   metadata?: MessageMetadata;
 }
+
+export interface Context {
+  destination: string;
+  message: Message;
+  metadata: Record<string, unknown>;
+}

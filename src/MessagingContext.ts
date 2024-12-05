@@ -1,4 +1,3 @@
-// src/MessagingContext.ts
 import { injectable, inject } from 'inversify';
 import { IMessagingService } from './interfaces';
 import { TYPES } from './constants';
@@ -9,6 +8,7 @@ import { Context, Middleware } from './middleware/types';
 @injectable()
 export class MessagingContext {
   private middlewareChain: MiddlewareChain;
+  private isInitialized = false;
 
   constructor(
     @inject(TYPES.MessagingService) private strategy: IMessagingService,
@@ -34,23 +34,44 @@ export class MessagingContext {
   }
 
   async init(): Promise<void> {
+    if (this.isInitialized) return;
+
     await this.strategy.init();
     if (this.fallbackStrategy) {
       await this.fallbackStrategy.init();
     }
+    this.isInitialized = true;
   }
 
   async dispose(): Promise<void> {
+    if (!this.isInitialized) return;
+
     await this.strategy.dispose();
     if (this.fallbackStrategy) {
       await this.fallbackStrategy.dispose();
     }
+    this.isInitialized = false;
   }
 
   async sendMessage(destination: string, message: Message): Promise<void> {
+    if (!this.isInitialized) {
+      await this.init();
+    }
+
     const context: Context = {
       destination,
-      message: { ...message },
+      message: {
+        ...message,
+        timestamp: new Date(),
+        metadata: {
+          ...message.metadata,
+          headers: {
+            ...message.metadata?.headers,
+            'x-destination': destination,
+            'x-timestamp': new Date().toISOString()
+          }
+        }
+      },
       metadata: {}
     };
 
@@ -71,11 +92,26 @@ export class MessagingContext {
   }
 
   async sendBatch(destination: string, messages: Message[]): Promise<void> {
+    if (!this.isInitialized) {
+      await this.init();
+    }
+
     const processedMessages = await Promise.all(
       messages.map(async (message) => {
         const context: Context = {
           destination,
-          message: { ...message },
+          message: {
+            ...message,
+            timestamp: new Date(),
+            metadata: {
+              ...message.metadata,
+              headers: {
+                ...message.metadata?.headers,
+                'x-destination': destination,
+                'x-timestamp': new Date().toISOString()
+              }
+            }
+          },
           metadata: {}
         };
         await this.middlewareChain.execute(context);

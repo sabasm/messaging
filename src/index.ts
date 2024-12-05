@@ -1,21 +1,8 @@
-import "reflect-metadata";
-
-// Core exports
+export * from './core/types';
 export * from './interfaces';
-export * from './types';
-export * from './constants';
-
-// Services
-export * from './MessagingService';
-export * from './ApiMessagingService';
-export * from './RabbitMqMessagingService';
-export * from './MonitoringService';
 export * from './MessagingContext';
+// export * from './MessagingFactory';
+// export * from './middleware/BaseMiddleware';
+// export * from './infrastructure/amqp';
 
-// Configuration
-export * from './core/types/config.types';
-export * from './builders/config.builder';
-export { MessagingFactory } from './messaging.factory';
 
-// Optional container export for advanced usage
-export { container } from './container';

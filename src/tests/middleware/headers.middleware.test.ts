@@ -1,58 +1,38 @@
-import { MiddlewareChain } from '../../middleware/implementation/middleware-chain';
-import { Context, Middleware } from '../../middleware/types';
-import { MessageMetadata } from '../../types/message.types';
+import { BaseConfig } from "../../config";
+import { CustomHeadersMiddleware } from "../../middleware/custom-headers.middleware";
+import { Context } from "../../types";
 
-describe('MiddlewareChain', () => {
-  let chain: MiddlewareChain;
+
+describe('CustomHeadersMiddleware', () => {
+  let middleware: CustomHeadersMiddleware;
   let context: Context;
-  let orders: number[];
 
   beforeEach(() => {
-    chain = new MiddlewareChain();
-    orders = [];
+    BaseConfig.clearInstance(); // Ensure config is reset for each test
+    middleware = new CustomHeadersMiddleware();
     context = {
-      destination: 'test',
+      destination: 'test-queue',
       message: {
         id: '1',
         timestamp: new Date(),
         payload: {},
-        metadata: { headers: {} }
+        metadata: { headers: {} },
       },
-      metadata: {}
+      metadata: {},
     };
   });
 
-  const createMiddleware = (priority: number): Middleware => ({
-    priority,
-    handler: async (ctx, next): Promise<void> => {
-      orders.push(priority);
-      await next();
-    }
-  });
+  it('should add custom headers to the message', async () => {
+    const next = jest.fn();
+    await middleware.handler(context, next);
 
-  it('should execute middleware in priority order', async () => {
-    chain.add(createMiddleware(1));
-    chain.add(createMiddleware(3));
-    chain.add(createMiddleware(2));
+    expect(context.message.metadata?.headers).toMatchObject({
+      'x-service-name': 'messaging',
+      'x-request-id': expect.any(String),
+      'x-timestamp': expect.any(String),
+      'x-environment': expect.any(String),
+    });
 
-    await chain.execute(context);
-
-    expect(orders).toEqual([3, 2, 1]);
-  });
-
-  it('should allow middleware to modify context', async () => {
-    const middleware: Middleware = {
-      handler: async (ctx, next): Promise<void> => {
-        const metadata: MessageMetadata = ctx.message.metadata || {};
-        metadata.test = true;
-        ctx.message.metadata = metadata;
-        await next();
-      }
-    };
-
-    chain.add(middleware);
-    await chain.execute(context);
-
-    expect(context.message.metadata?.test).toBe(true);
+    expect(next).toHaveBeenCalled();
   });
 });

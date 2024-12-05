@@ -39,10 +39,18 @@ describe('MessagingContext', () => {
     it('should use primary service successfully', async () => {
       primaryService.sendMessage.mockResolvedValue(undefined);
       await context.sendMessage('test-destination', message);
-      expect(primaryService.sendMessage).toHaveBeenCalledWith('test-destination', expect.objectContaining({
-        id: message.id,
-        metadata: expect.objectContaining({ headers: {} })
-      }));
+      expect(primaryService.sendMessage).toHaveBeenCalledWith(
+        'test-destination',
+        expect.objectContaining({
+          id: message.id,
+          metadata: expect.objectContaining({
+            headers: expect.objectContaining({
+              'x-destination': 'test-destination',
+              'x-timestamp': expect.any(String)
+            })
+          })
+        })
+      );
       expect(fallbackService.sendMessage).not.toHaveBeenCalled();
     });
 
@@ -51,10 +59,18 @@ describe('MessagingContext', () => {
       fallbackService.sendMessage.mockResolvedValue(undefined);
       await context.sendMessage('test-destination', message);
       expect(primaryService.sendMessage).toHaveBeenCalled();
-      expect(fallbackService.sendMessage).toHaveBeenCalledWith('test-destination', expect.objectContaining({
-        id: message.id,
-        metadata: expect.objectContaining({ headers: {} })
-      }));
+      expect(fallbackService.sendMessage).toHaveBeenCalledWith(
+        'test-destination',
+        expect.objectContaining({
+          id: message.id,
+          metadata: expect.objectContaining({
+            headers: expect.objectContaining({
+              'x-destination': 'test-destination',
+              'x-timestamp': expect.any(String)
+            })
+          })
+        })
+      );
     });
 
     it('should throw when both services fail', async () => {
@@ -83,6 +99,7 @@ describe('MessagingContext', () => {
     it('should allow changing primary strategy', async () => {
       const newStrategy = new MockMessagingService();
       context.setStrategy(newStrategy);
+      newStrategy.sendMessage.mockResolvedValue(undefined);
       await context.sendMessage('test', message);
       expect(newStrategy.sendMessage).toHaveBeenCalled();
       expect(primaryService.sendMessage).not.toHaveBeenCalled();
@@ -92,6 +109,7 @@ describe('MessagingContext', () => {
       const newFallback = new MockMessagingService();
       context.setFallbackStrategy(newFallback);
       primaryService.sendMessage.mockRejectedValue(new Error());
+      newFallback.sendMessage.mockResolvedValue(undefined);
       await context.sendMessage('test', message);
       expect(newFallback.sendMessage).toHaveBeenCalled();
       expect(fallbackService.sendMessage).not.toHaveBeenCalled();
@@ -100,15 +118,29 @@ describe('MessagingContext', () => {
 
   describe('lifecycle methods', () => {
     it('should initialize both services', async () => {
-      await context.init();
+      await context.sendMessage('test', message);
       expect(primaryService.init).toHaveBeenCalled();
       expect(fallbackService.init).toHaveBeenCalled();
     });
 
+    it('should initialize services only once', async () => {
+      await context.init();
+      await context.init();
+      expect(primaryService.init).toHaveBeenCalledTimes(1);
+      expect(fallbackService.init).toHaveBeenCalledTimes(1);
+    });
+
     it('should dispose both services', async () => {
+      await context.init();
       await context.dispose();
-      expect(primaryService.dispose).toHaveBeenCalled();
-      expect(fallbackService.dispose).toHaveBeenCalled();
+      expect(primaryService.dispose).toHaveBeenCalledTimes(1);
+      expect(fallbackService.dispose).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle dispose when not initialized', async () => {
+      await context.dispose();
+      expect(primaryService.dispose).not.toHaveBeenCalled();
+      expect(fallbackService.dispose).not.toHaveBeenCalled();
     });
   });
 });

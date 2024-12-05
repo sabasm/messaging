@@ -35,7 +35,7 @@ export class ApiMessagingProvider extends BaseService implements IMessagingServi
 
   private async performHealthCheck(): Promise<void> {
     try {
-      const apiConfig = this.globalConfig.getConfig().messaging.api;
+      const apiConfig = this.globalConfig.getConfig().api;
       const healthEndpoint = `${apiConfig.baseUrl}/health`;
       await this.httpClient.post(healthEndpoint, { timestamp: new Date() });
       this.monitoring.gauge('api_provider_health', 1);
@@ -49,7 +49,7 @@ export class ApiMessagingProvider extends BaseService implements IMessagingServi
     if (this.isInitialized) return;
 
     try {
-      const apiConfig = this.globalConfig.getConfig().messaging.api;
+      const apiConfig = this.globalConfig.getConfig().api;
       if (!apiConfig.baseUrl) {
         throw new Error('API baseUrl is required');
       }
@@ -87,7 +87,7 @@ export class ApiMessagingProvider extends BaseService implements IMessagingServi
   }
 
   private async sendWithRetry(destination: string, message: Message): Promise<void> {
-    const config = this.globalConfig.getConfig().messaging.api;
+    const config = this.globalConfig.getConfig().api;
 
     for (let attempt = 1; attempt <= config.retryCount; attempt++) {
       try {
@@ -119,4 +119,3 @@ export class ApiMessagingProvider extends BaseService implements IMessagingServi
     }
   }
 }
-

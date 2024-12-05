@@ -18,16 +18,14 @@ export class MessagingFactory {
     this.container.bind(TYPES.Config).toConstantValue(this.config);
     this.container.bind(TYPES.MonitoringService).to(MonitoringService).inSingletonScope();
 
-    // Configure primary messaging service based on config
-    if (this.config.messaging.api?.baseUrl) {
+    if (this.config.api?.baseUrl) {
       this.container.bind(TYPES.MessagingService).to(ApiMessagingService).inSingletonScope();
-    } else if (this.config.messaging.rabbitmq?.url) {
+    } else if (this.config.rabbitmq?.url) {
       this.container.bind(TYPES.MessagingService).to(RabbitMqMessagingService).inSingletonScope();
     }
 
-    // Configure fallback if enabled
-    if (this.config.messaging.fallback?.enabled !== false) {
-      if (this.config.messaging.rabbitmq?.url) {
+    if (this.config.fallback?.enabled !== false) {
+      if (this.config.rabbitmq?.url) {
         this.container.bind(TYPES.FallbackMessagingService).to(RabbitMqMessagingService).inSingletonScope();
       }
     }
@@ -39,5 +37,3 @@ export class MessagingFactory {
     return this.container.get<MessagingContext>(TYPES.MessagingContext);
   }
 }
-
-

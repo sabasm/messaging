@@ -12,6 +12,7 @@ export interface MessageMetadata {
  correlationId?: string;
  headers?: Record<string, unknown>;
  retryCount?: number;
+ test?: boolean;
 }
 
 
