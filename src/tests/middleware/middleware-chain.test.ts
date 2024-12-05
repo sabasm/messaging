@@ -1,6 +1,7 @@
+import { Context } from '../../types';
 import { MiddlewareChain } from '../../middleware/implementation/middleware-chain';
-import { Context, Middleware } from '../../middleware/types';
-import { MessageMetadata } from '../../types/message.types';
+import { Middleware } from '../../middleware/types';
+import { MessageMetadata } from '../../types';
 
 describe('MiddlewareChain', () => {
   let chain: MiddlewareChain;

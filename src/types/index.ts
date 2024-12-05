@@ -1,4 +1,3 @@
-export * from './message.types';
-export * from '../core/types/metrics';
-
-
+export * from '../core/types';
+export * from '../interfaces';
+export * from '../core/types/messaging';
