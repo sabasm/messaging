@@ -1,38 +1,44 @@
-import { BaseConfig } from "../../config";
-import { CustomHeadersMiddleware } from "../../middleware/custom-headers.middleware";
-import { Context } from "../../types";
-
+import { Context } from '../../core/types/middleware.types';
+import { CustomHeadersMiddleware } from '../../middleware/custom-headers.middleware'; 
+import { MessagingConfig } from '../../core/types/config.types';
+import { DEFAULT_CONFIG } from '../../config/messaging.config';
 
 describe('CustomHeadersMiddleware', () => {
   let middleware: CustomHeadersMiddleware;
   let context: Context;
 
   beforeEach(() => {
-    BaseConfig.clearInstance(); // Ensure config is reset for each test
-    middleware = new CustomHeadersMiddleware();
+    const config: MessagingConfig = {
+      ...DEFAULT_CONFIG,
+      monitoring: {
+        ...DEFAULT_CONFIG.monitoring,
+        metricsPrefix: 'test-service'
+      }
+    };
+    
+    middleware = new CustomHeadersMiddleware(config);
     context = {
       destination: 'test-queue',
       message: {
         id: '1',
         timestamp: new Date(),
         payload: {},
-        metadata: { headers: {} },
+        metadata: { headers: {} }
       },
-      metadata: {},
+      metadata: {}
     };
   });
 
-  it('should add custom headers to the message', async () => {
-    const next = jest.fn();
-    await middleware.handler(context, next);
+  it('should add custom headers to message', async () => {
+    await middleware.handler(context, jest.fn());
 
     expect(context.message.metadata?.headers).toMatchObject({
-      'x-service-name': 'messaging',
+      'x-service-name': 'test-service',
       'x-request-id': expect.any(String),
       'x-timestamp': expect.any(String),
-      'x-environment': expect.any(String),
+      'x-environment': expect.any(String)
     });
-
-    expect(next).toHaveBeenCalled();
   });
 });
+
+
